@@ -218,15 +218,16 @@ class SSLAuth(AuthHandler):
     Handler for SSL/TLS connections (mutual TLS).
     
     Requires:
-    - CA certificate for server verification
-    - Client certificate and key for authentication
+    - CA certificate for server verification (ssl_cafile is mandatory)
+    - Optional: client certificate and key for mutual TLS authentication
     """
 
     def validate(self) -> None:
         """Validate SSL configuration."""
+        # SSL context is mandatory - requires CA certificate
         if not self._config.ssl_cafile:
             raise AuthenticationError(
-                "SSL authentication requires ssl_cafile",
+                "SSL authentication requires ssl_cafile for SSL context",
                 auth_type="ssl",
             )
         
@@ -242,8 +243,14 @@ class SSLAuth(AuthHandler):
                 auth_type="ssl",
             )
         
-        # Build and validate SSL context
+        # Build and validate SSL context (mandatory)
         self._ssl_context = self._build_ssl_context()
+        
+        if not self._ssl_context:
+            raise AuthenticationError(
+                "Failed to create SSL context for SSL authentication",
+                auth_type="ssl",
+            )
         
         logger.info(
             "ssl_auth_configured",
@@ -253,24 +260,10 @@ class SSLAuth(AuthHandler):
 
     def to_aiokafka_config(self) -> dict[str, Any]:
         """Return SSL configuration."""
-        config: dict[str, Any] = {
+        return {
             "security_protocol": SecurityProtocol.SSL.value,
+            "ssl_context": self._ssl_context,  # Always include SSL context
         }
-        
-        if self._ssl_context:
-            config["ssl_context"] = self._ssl_context
-        else:
-            # Provide individual SSL settings
-            if self._config.ssl_cafile:
-                config["ssl_cafile"] = self._config.ssl_cafile
-            if self._config.ssl_certfile:
-                config["ssl_certfile"] = self._config.ssl_certfile
-            if self._config.ssl_keyfile:
-                config["ssl_keyfile"] = self._config.ssl_keyfile
-            if self._config.ssl_password:
-                config["ssl_password"] = self._config.ssl_password
-        
-        return config
 
 
 class SASLPlaintextAuth(AuthHandler):
@@ -332,10 +325,22 @@ class SASLSSLAuth(AuthHandler):
     
     Combines SASL authentication with SSL encryption.
     This is the recommended method for production.
+    
+    Requires:
+    - CA certificate for server verification (ssl_cafile is mandatory)
+    - SASL mechanism and credentials
+    - Optional: client certificate and key for mutual TLS
     """
 
     def validate(self) -> None:
         """Validate SASL_SSL configuration."""
+        # SSL context is mandatory for SASL_SSL
+        if not self._config.ssl_cafile:
+            raise AuthenticationError(
+                "SASL_SSL authentication requires ssl_cafile for SSL context",
+                auth_type="sasl_ssl",
+            )
+        
         # Validate SASL settings
         if not self._config.sasl_mechanism:
             raise AuthenticationError(
@@ -360,14 +365,32 @@ class SASLSSLAuth(AuthHandler):
                     auth_type="sasl_ssl",
                 )
         
-        # Build SSL context (optional for SASL_SSL - server cert verification)
-        if self._config.ssl_cafile:
-            self._ssl_context = self._build_ssl_context()
+        # For mutual TLS, both cert and key are required
+        if self._config.ssl_certfile and not self._config.ssl_keyfile:
+            raise AuthenticationError(
+                "SSL client certificate requires ssl_keyfile",
+                auth_type="sasl_ssl",
+            )
+        if self._config.ssl_keyfile and not self._config.ssl_certfile:
+            raise AuthenticationError(
+                "SSL client key requires ssl_certfile",
+                auth_type="sasl_ssl",
+            )
+        
+        # Build SSL context (mandatory for SASL_SSL)
+        self._ssl_context = self._build_ssl_context()
+        
+        if not self._ssl_context:
+            raise AuthenticationError(
+                "Failed to create SSL context for SASL_SSL",
+                auth_type="sasl_ssl",
+            )
         
         logger.info(
             "sasl_ssl_auth_configured",
             mechanism=self._config.sasl_mechanism.value if self._config.sasl_mechanism else None,
-            has_ssl_context=self._ssl_context is not None,
+            cafile=self._config.ssl_cafile,
+            mutual_tls=bool(self._config.ssl_certfile),
         )
 
     def to_aiokafka_config(self) -> dict[str, Any]:
@@ -375,6 +398,7 @@ class SASLSSLAuth(AuthHandler):
         config: dict[str, Any] = {
             "security_protocol": SecurityProtocol.SASL_SSL.value,
             "sasl_mechanism": self._config.sasl_mechanism.value if self._config.sasl_mechanism else None,
+            "ssl_context": self._ssl_context,  # Always include SSL context
         }
         
         # SASL credentials
@@ -382,12 +406,6 @@ class SASLSSLAuth(AuthHandler):
             config["sasl_plain_username"] = self._config.sasl_username
         if self._config.sasl_password:
             config["sasl_plain_password"] = self._config.sasl_password
-        
-        # SSL settings
-        if self._ssl_context:
-            config["ssl_context"] = self._ssl_context
-        elif self._config.ssl_cafile:
-            config["ssl_cafile"] = self._config.ssl_cafile
         
         return config
 

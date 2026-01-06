@@ -580,9 +580,9 @@ Each handler builds SSL context and validates requirements:
 | Handler | Requirements | Notes |
 |---------|--------------|-------|
 | `PlaintextAuth` | None | Development only, logs warning |
-| `SSLAuth` | CA cert, optional client cert+key | For mutual TLS |
+| `SSLAuth` | **CA cert (mandatory)**, optional client cert+key | SSL context always created |
 | `SASLPlaintextAuth` | SASL mechanism, username, password | Logs warning (unencrypted) |
-| `SASLSSLAuth` | SASL creds, optional CA cert | Recommended for production |
+| `SASLSSLAuth` | **CA cert (mandatory)**, SASL mechanism, username, password, optional client cert+key | SSL context always created, recommended for production |
 
 #### AsyncKafkaProducer (`producer.py`)
 
@@ -892,12 +892,14 @@ log_payloads: false
 
 ### Supported Protocols
 
-| Protocol | Security | Use Case |
-|----------|----------|----------|
-| `PLAINTEXT` | None | Local development only |
-| `SSL` | TLS encryption + mTLS auth | Production with certificate auth |
-| `SASL_PLAINTEXT` | SASL auth, no encryption | **Not recommended** |
-| `SASL_SSL` | SASL auth + TLS encryption | Production with password auth |
+| Protocol | Security | SSL Context | Use Case |
+|----------|----------|-------------|----------|
+| `PLAINTEXT` | None | Not required | Local development only |
+| `SSL` | TLS encryption + mTLS auth | **Mandatory** | Production with certificate auth |
+| `SASL_PLAINTEXT` | SASL auth, no encryption | Not required | **Not recommended** |
+| `SASL_SSL` | SASL auth + TLS encryption | **Mandatory** | Production with password auth |
+
+> **Note**: SSL context (via `ssl_cafile`) is mandatory for both `SSL` and `SASL_SSL` protocols. This ensures proper server certificate verification and secure connections.
 
 ### SASL_SSL Flow
 
@@ -934,17 +936,17 @@ log_payloads: false
 
 ### SSL/mTLS Certificate Handling
 
-The `SSLAuth` handler builds an `ssl.SSLContext`:
+Both `SSLAuth` and `SASLSSLAuth` handlers **always** build an `ssl.SSLContext`. The CA certificate (`ssl_cafile`) is mandatory:
 
 ```python
 def _build_ssl_context(self) -> ssl.SSLContext:
     context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
     
-    # 1. Load CA certificate (verifies server)
-    if self._config.ssl_cafile:
-        context.load_verify_locations(cafile=self._config.ssl_cafile)
+    # 1. Load CA certificate (MANDATORY - verifies server)
+    # Raises AuthenticationError if ssl_cafile is not provided
+    context.load_verify_locations(cafile=self._config.ssl_cafile)
     
-    # 2. Load client certificate + key (for mTLS)
+    # 2. Load client certificate + key (optional, for mTLS)
     if self._config.ssl_certfile and self._config.ssl_keyfile:
         context.load_cert_chain(
             certfile=self._config.ssl_certfile,
@@ -957,6 +959,11 @@ def _build_ssl_context(self) -> ssl.SSLContext:
     
     return context
 ```
+
+**Validation ensures:**
+- `ssl_cafile` is always required for `SSL` and `SASL_SSL`
+- SSL context is always created (never returns `None`)
+- If `ssl_certfile` is provided, `ssl_keyfile` must also be provided (and vice versa)
 
 ### Auth Handler Factory Pattern
 
