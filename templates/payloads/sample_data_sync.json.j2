@@ -1,0 +1,39 @@
+{
+  "eventType": "DATA_SYNC_TRIGGER",
+  "eventId": "{{ correlation_id }}",
+  "timestamp": "{{ timestamp }}",
+  "timestampMs": {{ timestamp_ms }},
+  "source": {
+    "system": "{{ source_system | default('velox') }}",
+    "environment": "{{ environment }}",
+    "etlName": "{{ etl_name }}"
+  },
+  "metadata": {
+    "eventIndex": {{ event_index }},
+    "totalEvents": {{ event_count }},
+    "batchId": "{{ batch_id | default(uuid4()) }}",
+    "version": "{{ version | default('1.0.0') }}"
+  },
+  "payload": {
+    "action": "{{ action | default('SYNC') }}",
+    "targetSystem": "{{ target_system | default('default') }}",
+    "syncType": "{{ sync_type | default('incremental') }}",
+    "options": {
+      "forceRefresh": {{ force_refresh | default(false) | lower }},
+      "validateOnly": {{ validate_only | default(false) | lower }},
+      "priority": "{{ priority | default('normal') }}"
+    },
+    "filters": {
+      "fromDate": "{{ from_date | default('') }}",
+      "toDate": "{{ to_date | default('') }}",
+      "entityTypes": {{ entity_types | default([]) | to_json }}
+    }
+  },
+  "context": {
+    "requestedBy": "{{ requested_by | default('system') }}",
+    "reason": "{{ reason | default('scheduled') }}",
+    "correlationId": "{{ correlation_id }}",
+    "traceId": "{{ trace_id | default(uuid4()) }}"
+  }
+}
+

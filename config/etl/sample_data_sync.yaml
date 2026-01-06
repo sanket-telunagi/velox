@@ -1,0 +1,46 @@
+# Sample Data Sync ETL Configuration
+# Triggers data synchronization across systems
+
+name: "sample_data_sync"
+description: "Sample ETL for data synchronization between systems"
+category: "data_sync"
+enabled: true
+
+# Topic mapping per environment
+topics:
+  dev: "dev.etl.data-sync.triggers"
+  qa: "qa.etl.data-sync.triggers"
+  staging: "staging.etl.data-sync.triggers"
+  uat: "uat.etl.data-sync.triggers"
+  preprod: "preprod.etl.data-sync.triggers"
+  prod: "prod.etl.data-sync.triggers"
+
+# Payload template (Jinja2)
+payload_template: "sample_data_sync.json.j2"
+
+# Message headers (supports Jinja2 templating)
+headers:
+  X-ETL-Name: "{{ etl_name }}"
+  X-Correlation-ID: "{{ correlation_id }}"
+  X-Environment: "{{ environment }}"
+  X-Timestamp: "{{ timestamp }}"
+  X-Source: "etl-connectors"
+  Content-Type: "application/json"
+
+# Message key template (optional)
+key_template: "{{ etl_name }}-{{ correlation_id }}"
+
+# No specific partition - use default partitioning
+partition: null
+
+# Execution settings
+batch_size: 50
+parallel: true
+max_retries: 3
+retry_backoff_ms: 100
+
+# Extra configuration
+extra:
+  priority: "normal"
+  timeout_seconds: 300
+

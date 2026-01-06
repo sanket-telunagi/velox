@@ -1,0 +1,43 @@
+# Inventory Refresh ETL Configuration
+# Triggers inventory system refresh
+
+name: "inventory_refresh"
+description: "ETL for inventory refresh operations"
+category: "inventory"
+enabled: true
+
+# Topic mapping per environment
+topics:
+  dev: "dev.inventory.refresh"
+  qa: "qa.inventory.refresh"
+  staging: "staging.inventory.refresh"
+  uat: "uat.inventory.refresh"
+  preprod: "preprod.inventory.refresh"
+  prod: "prod.inventory.refresh"
+
+# Payload template
+payload_template: "inventory_refresh.json.j2"
+
+# Headers
+headers:
+  X-ETL-Name: "{{ etl_name }}"
+  X-Correlation-ID: "{{ correlation_id }}"
+  X-Environment: "{{ environment }}"
+  X-Timestamp: "{{ timestamp }}"
+  X-Event-Type: "INVENTORY_REFRESH"
+  X-Batch-ID: "{{ batch_id | default(uuid4()) }}"
+  Content-Type: "application/json"
+
+# Key template
+key_template: "inventory-{{ warehouse_id | default('all') }}"
+
+# Execution settings
+batch_size: 200
+parallel: true
+max_retries: 3
+retry_backoff_ms: 500
+
+extra:
+  priority: "normal"
+  full_refresh: false
+

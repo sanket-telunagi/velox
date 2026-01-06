@@ -1,0 +1,81 @@
+# ETL Runner Configuration
+# Controls execution behavior, filtering, and limits
+
+# Execution settings
+execution:
+  # Number of parallel workers for concurrent processing
+  parallel_workers: 10
+  
+  # Default batch size for Kafka producer
+  batch_size: 100
+  
+  # Batch timeout in milliseconds
+  batch_timeout_ms: 5000
+  
+  # Retry configuration
+  max_retries: 3
+  retry_backoff_ms: 100
+  
+  # Connection pool size per environment
+  connection_pool_size: 5
+  
+  # Error handling
+  fail_fast: false
+  continue_on_error: true
+
+# Filtering - control which ETLs and environments to run
+filters:
+  # Environments to include (empty = all)
+  environments: []
+  # - dev
+  # - qa
+  
+  # Categories to include (empty = all)
+  categories: []
+  # - data_sync
+  # - customer
+  
+  # Specific ETLs to include (empty = all)
+  etls: []
+  # - sample_data_sync
+  
+  # Exclusions
+  exclude_environments:
+    - prod  # Exclude production by default for safety
+  
+  exclude_categories: []
+  exclude_etls: []
+
+# Limits - micro-level control over execution volume
+limits:
+  # Maximum events per ETL (null = unlimited)
+  max_events_per_etl: 1000
+  
+  # Maximum events per environment (null = unlimited)
+  max_events_per_environment: null
+  
+  # Maximum total events across all executions (null = unlimited)
+  max_total_events: 10000
+  
+  # Maximum number of ETLs to run (null = unlimited)
+  max_etls: null
+  
+  # Maximum environments per ETL (null = unlimited)
+  max_environments: null
+  
+  # Timeouts
+  timeout_seconds: 3600
+  timeout_per_etl_seconds: 300
+
+# Additional context for template rendering
+context:
+  source_system: "velox"
+  version: "1.0.0"
+
+# Execution mode
+dry_run: false
+
+# Logging
+verbose: false
+log_payloads: false
+

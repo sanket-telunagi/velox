@@ -1,0 +1,51 @@
+# Staging Environment Configuration
+# Uses SASL_SSL with SCRAM authentication
+
+environment: "{{ ENV_NAME | default('staging') }}"
+
+kafka:
+  # Connection settings
+  bootstrap_servers: "{{ KAFKA_STAGING_BOOTSTRAP }}"
+  
+  # Security - Staging uses SASL_SSL with SCRAM
+  security_protocol: "{{ KAFKA_STAGING_SECURITY_PROTOCOL | default('SASL_SSL') }}"
+  
+  # SASL settings - SCRAM-SHA-256 for stronger auth
+  sasl:
+    mechanism: "{{ KAFKA_STAGING_SASL_MECHANISM | default('SCRAM-SHA-256') }}"
+    username: "{{ KAFKA_STAGING_USERNAME }}"
+    password: "{{ KAFKA_STAGING_PASSWORD }}"
+  
+  # SSL settings
+  ssl:
+    cafile: "{{ KAFKA_STAGING_SSL_CA_PATH }}"
+    certfile: "{{ KAFKA_STAGING_SSL_CERT_PATH | default('') }}"
+    keyfile: "{{ KAFKA_STAGING_SSL_KEY_PATH | default('') }}"
+    check_hostname: true
+  
+  # Client settings
+  client_id: "velox-staging"
+  request_timeout_ms: 30000
+
+# Producer configuration
+producer:
+  batch_size: 32768
+  linger_ms: 10
+  acks: "all"
+  retries: 5
+  compression_type: "lz4"
+  enable_idempotence: true
+
+# Consumer configuration
+consumer:
+  group_id: "velox-staging-group"
+  auto_offset_reset: "earliest"
+  enable_auto_commit: false  # Manual commit in staging
+  auto_commit_interval_ms: 5000
+  max_poll_records: 1000
+
+# Extra settings
+extra:
+  description: "Staging environment - mirrors production"
+  log_level: "INFO"
+

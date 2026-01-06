@@ -1,0 +1,58 @@
+# Production Environment Configuration
+# Uses mutual TLS (SSL) for strongest security
+
+environment: "{{ ENV_NAME | default('prod') }}"
+
+kafka:
+  # Connection settings
+  bootstrap_servers: "{{ KAFKA_PROD_BOOTSTRAP }}"
+  
+  # Security - Production uses mutual TLS (SSL)
+  security_protocol: "{{ KAFKA_PROD_SECURITY_PROTOCOL | default('SSL') }}"
+  
+  # SASL settings - not used for SSL auth
+  sasl:
+    mechanism: ""
+    username: ""
+    password: ""
+  
+  # SSL settings - mutual TLS required
+  ssl:
+    cafile: "{{ KAFKA_PROD_SSL_CA_PATH }}"
+    certfile: "{{ KAFKA_PROD_SSL_CERT_PATH }}"
+    keyfile: "{{ KAFKA_PROD_SSL_KEY_PATH }}"
+    check_hostname: true
+  
+  # Client settings
+  client_id: "velox-prod"
+  request_timeout_ms: 60000
+  connections_max_idle_ms: 540000
+
+# Producer configuration - optimized for reliability
+producer:
+  batch_size: 65536
+  linger_ms: 5
+  acks: "all"
+  retries: 2147483647  # Infinite retries
+  retry_backoff_ms: 100
+  max_request_size: 1048576
+  compression_type: "lz4"
+  enable_idempotence: true
+
+# Consumer configuration - conservative settings
+consumer:
+  group_id: "velox-prod-group"
+  auto_offset_reset: "earliest"
+  enable_auto_commit: false  # Always manual commit in prod
+  auto_commit_interval_ms: 5000
+  max_poll_records: 500
+  session_timeout_ms: 45000
+  heartbeat_interval_ms: 15000
+  max_poll_interval_ms: 300000
+
+# Extra settings
+extra:
+  description: "Production environment - highest security and reliability"
+  log_level: "WARNING"
+  alert_on_error: true
+

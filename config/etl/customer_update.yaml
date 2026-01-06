@@ -1,0 +1,42 @@
+# Customer Update ETL Configuration
+# Triggers customer data updates
+
+name: "customer_update"
+description: "ETL for customer data update events"
+category: "customer"
+enabled: true
+
+# Topic mapping per environment
+topics:
+  dev: "dev.customer.updates"
+  qa: "qa.customer.updates"
+  staging: "staging.customer.updates"
+  uat: "uat.customer.updates"
+  preprod: "preprod.customer.updates"
+  prod: "prod.customer.updates"
+
+# Payload template
+payload_template: "customer_update.json.j2"
+
+# Headers
+headers:
+  X-ETL-Name: "{{ etl_name }}"
+  X-Correlation-ID: "{{ correlation_id }}"
+  X-Environment: "{{ environment }}"
+  X-Timestamp: "{{ timestamp }}"
+  X-Event-Type: "CUSTOMER_UPDATE"
+  Content-Type: "application/json"
+
+# Key by customer ID if available
+key_template: "{{ customer_id | default(correlation_id) }}"
+
+# Execution settings
+batch_size: 100
+parallel: true
+max_retries: 5
+retry_backoff_ms: 200
+
+extra:
+  priority: "high"
+  requires_acknowledgment: true
+

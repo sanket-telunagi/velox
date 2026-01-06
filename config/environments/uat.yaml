@@ -1,0 +1,51 @@
+# UAT (User Acceptance Testing) Environment Configuration
+# Uses SASL_SSL with SCRAM-SHA-256
+
+environment: "{{ ENV_NAME | default('uat') }}"
+
+kafka:
+  # Connection settings
+  bootstrap_servers: "{{ KAFKA_UAT_BOOTSTRAP }}"
+  
+  # Security - UAT uses SASL_SSL
+  security_protocol: "{{ KAFKA_UAT_SECURITY_PROTOCOL | default('SASL_SSL') }}"
+  
+  # SASL settings
+  sasl:
+    mechanism: "{{ KAFKA_UAT_SASL_MECHANISM | default('SCRAM-SHA-256') }}"
+    username: "{{ KAFKA_UAT_USERNAME }}"
+    password: "{{ KAFKA_UAT_PASSWORD }}"
+  
+  # SSL settings
+  ssl:
+    cafile: "{{ KAFKA_UAT_SSL_CA_PATH }}"
+    certfile: "{{ KAFKA_UAT_SSL_CERT_PATH | default('') }}"
+    keyfile: "{{ KAFKA_UAT_SSL_KEY_PATH | default('') }}"
+    check_hostname: true
+  
+  # Client settings
+  client_id: "velox-uat"
+  request_timeout_ms: 30000
+
+# Producer configuration
+producer:
+  batch_size: 32768
+  linger_ms: 10
+  acks: "all"
+  retries: 5
+  compression_type: "lz4"
+  enable_idempotence: true
+
+# Consumer configuration
+consumer:
+  group_id: "velox-uat-group"
+  auto_offset_reset: "earliest"
+  enable_auto_commit: false
+  auto_commit_interval_ms: 5000
+  max_poll_records: 1000
+
+# Extra settings
+extra:
+  description: "UAT environment - user acceptance testing"
+  log_level: "INFO"
+

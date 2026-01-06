@@ -1,0 +1,53 @@
+# Pre-Production Environment Configuration
+# Uses mutual TLS (SSL) for authentication
+
+environment: "{{ ENV_NAME | default('preprod') }}"
+
+kafka:
+  # Connection settings
+  bootstrap_servers: "{{ KAFKA_PREPROD_BOOTSTRAP }}"
+  
+  # Security - PreProd uses mutual TLS (SSL)
+  security_protocol: "{{ KAFKA_PREPROD_SECURITY_PROTOCOL | default('SSL') }}"
+  
+  # SASL settings - not used for SSL auth
+  sasl:
+    mechanism: ""
+    username: ""
+    password: ""
+  
+  # SSL settings - mutual TLS
+  ssl:
+    cafile: "{{ KAFKA_PREPROD_SSL_CA_PATH }}"
+    certfile: "{{ KAFKA_PREPROD_SSL_CERT_PATH }}"
+    keyfile: "{{ KAFKA_PREPROD_SSL_KEY_PATH }}"
+    check_hostname: true
+  
+  # Client settings
+  client_id: "velox-preprod"
+  request_timeout_ms: 45000
+
+# Producer configuration - production-like settings
+producer:
+  batch_size: 65536
+  linger_ms: 5
+  acks: "all"
+  retries: 10
+  retry_backoff_ms: 200
+  compression_type: "lz4"
+  enable_idempotence: true
+
+# Consumer configuration
+consumer:
+  group_id: "velox-preprod-group"
+  auto_offset_reset: "earliest"
+  enable_auto_commit: false
+  auto_commit_interval_ms: 5000
+  max_poll_records: 500
+  session_timeout_ms: 30000
+
+# Extra settings
+extra:
+  description: "Pre-production environment - final validation before prod"
+  log_level: "WARNING"
+

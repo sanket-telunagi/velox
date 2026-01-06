@@ -1,0 +1,51 @@
+# QA Environment Configuration
+# Uses SASL_SSL for secure authentication
+
+environment: "{{ ENV_NAME | default('qa') }}"
+
+kafka:
+  # Connection settings
+  bootstrap_servers: "{{ KAFKA_QA_BOOTSTRAP }}"
+  
+  # Security - QA uses SASL_SSL
+  security_protocol: "{{ KAFKA_QA_SECURITY_PROTOCOL | default('SASL_SSL') }}"
+  
+  # SASL settings
+  sasl:
+    mechanism: "{{ KAFKA_QA_SASL_MECHANISM | default('PLAIN') }}"
+    username: "{{ KAFKA_QA_USERNAME }}"
+    password: "{{ KAFKA_QA_PASSWORD }}"
+  
+  # SSL settings
+  ssl:
+    cafile: "{{ KAFKA_QA_SSL_CA_PATH }}"
+    certfile: "{{ KAFKA_QA_SSL_CERT_PATH | default('') }}"
+    keyfile: "{{ KAFKA_QA_SSL_KEY_PATH | default('') }}"
+    check_hostname: true
+  
+  # Client settings
+  client_id: "velox-qa"
+  request_timeout_ms: 30000
+
+# Producer configuration
+producer:
+  batch_size: 16384
+  linger_ms: 10
+  acks: "all"
+  retries: 3
+  compression_type: "gzip"
+  enable_idempotence: true
+
+# Consumer configuration
+consumer:
+  group_id: "velox-qa-group"
+  auto_offset_reset: "earliest"
+  enable_auto_commit: true
+  auto_commit_interval_ms: 5000
+  max_poll_records: 500
+
+# Extra settings
+extra:
+  description: "QA environment - SASL_SSL authentication"
+  log_level: "INFO"
+

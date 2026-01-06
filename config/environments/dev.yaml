@@ -1,0 +1,51 @@
+# Development Environment Configuration
+# All values support Jinja2 templating with access to environment variables
+
+environment: "{{ ENV_NAME | default('dev') }}"
+
+kafka:
+  # Connection settings
+  bootstrap_servers: "{{ KAFKA_DEV_BOOTSTRAP | default('localhost:9092') }}"
+  
+  # Security - Development typically uses PLAINTEXT
+  security_protocol: "{{ KAFKA_DEV_SECURITY_PROTOCOL | default('PLAINTEXT') }}"
+  
+  # SASL settings (if using SASL)
+  sasl:
+    mechanism: "{{ KAFKA_DEV_SASL_MECHANISM | default('PLAIN') }}"
+    username: "{{ KAFKA_DEV_USERNAME | default('') }}"
+    password: "{{ KAFKA_DEV_PASSWORD | default('') }}"
+  
+  # SSL settings (if using SSL)
+  ssl:
+    cafile: "{{ KAFKA_DEV_SSL_CA_PATH | default('') }}"
+    certfile: "{{ KAFKA_DEV_SSL_CERT_PATH | default('') }}"
+    keyfile: "{{ KAFKA_DEV_SSL_KEY_PATH | default('') }}"
+    check_hostname: false
+  
+  # Client settings
+  client_id: "velox-dev"
+  request_timeout_ms: 30000
+
+# Producer configuration
+producer:
+  batch_size: 16384
+  linger_ms: 5
+  acks: "1"  # Development - faster, less durable
+  retries: 3
+  compression_type: "none"
+  enable_idempotence: false
+
+# Consumer configuration  
+consumer:
+  group_id: "velox-dev-group"
+  auto_offset_reset: "earliest"
+  enable_auto_commit: true
+  auto_commit_interval_ms: 5000
+  max_poll_records: 500
+
+# Extra settings
+extra:
+  description: "Development environment - local Kafka"
+  log_level: "DEBUG"
+
